@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pokédex - Árvore de Evolução e Formas</title>
+    
+    <!-- Configurações para Web App (PWA) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#cc0000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
     <style>
         body {
             font-family: 'Arial', sans-serif;
@@ -316,7 +322,6 @@
         
         <div class="detail-header">
             <h2 id="detailName" style="text-transform: capitalize; font-size: 28px;"></h2>
-            <!-- Imagem clicável com zoom -->
             <img id="detailImg" src="" alt="Pokémon" onclick="abrirZoomImagem()" title="Clique para ampliar para desenho">
             <div class="types" id="detailTypes" style="margin: 15px 0;"></div>
         </div>
@@ -664,7 +669,7 @@
 
                 document.getElementById('detailName').innerText = `#${pokemon.id} - ${pokemon.name}`;
                 document.getElementById('detailImg').src = imgUrl;
-                document.getElementById('detailImg').dataset.name = pokemon.name; // Salva o nome para o modal
+                document.getElementById('detailImg').dataset.name = pokemon.name; 
                 
                 const divTipos = document.getElementById('detailTypes');
                 divTipos.innerHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
@@ -687,7 +692,6 @@
             }
         }
 
-        // Funções do Modal de Zoom para Desenho
         function abrirZoomImagem() {
             const imgDetalhe = document.getElementById('detailImg');
             const modal = document.getElementById('zoomModal');
