@@ -675,14 +675,6 @@
             }
 
             btnLimpar.style.display = 'block';
-            
-            // Reseta o menu de tipos visualmente
-            tipoAtualSelecionado = '';
-            const btnTipo = document.getElementById('typeDropdownBtn');
-            btnTipo.style.backgroundColor = '#f8f9fa';
-            btnTipo.style.color = '#333';
-            document.getElementById('typeBtnText').innerText = 'Todos os Tipos';
-
             document.getElementById('formSelect').value = '';
             modoAtual = 'padrao';
 
@@ -754,7 +746,6 @@
             document.getElementById('searchInput').value = '';
             document.getElementById('btnClearSearch').style.display = 'none';
             
-            // Reseta o menu de tipos visualmente
             tipoAtualSelecionado = '';
             const btnTipo = document.getElementById('typeDropdownBtn');
             btnTipo.style.backgroundColor = '#f8f9fa';
