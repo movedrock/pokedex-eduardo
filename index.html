@@ -103,7 +103,7 @@
             box-shadow: 0 6px 15px rgba(0,0,0,0.15);
         }
 
-        /* Botão de Som no Card */
+        /* Botão de Som nos Cards */
         .btn-som {
             position: absolute;
             top: 12px;
@@ -122,6 +122,28 @@
             z-index: 2;
         }
         .btn-som:hover {
+            background-color: #cc0000;
+            border-color: #cc0000;
+            transform: scale(1.1);
+        }
+
+        /* Botão de Som na Tela de Detalhes */
+        .btn-som-detalhe {
+            background: #f0f2f5;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: 0.2s;
+            vertical-align: middle;
+            margin-left: 10px;
+        }
+        .btn-som-detalhe:hover {
             background-color: #cc0000;
             border-color: #cc0000;
             transform: scale(1.1);
@@ -347,7 +369,10 @@
         <div style="clear: both;"></div>
         
         <div class="detail-header">
-            <h2 id="detailName" style="text-transform: capitalize; font-size: 28px;"></h2>
+            <div style="display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <h2 id="detailName" style="text-transform: capitalize; font-size: 28px; margin: 0;"></h2>
+                <div id="detailSoundContainer"></div>
+            </div>
             <img id="detailImg" src="" alt="Pokémon" onclick="abrirZoomImagem()" title="Clique para ampliar para desenho">
             <div class="types" id="detailTypes" style="margin: 15px 0;"></div>
         </div>
@@ -504,7 +529,6 @@
             const tiposHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
             const imagemUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
             
-            // Pega o som principal da API (prioriza o 'latest', se não houver pega o 'legacy')
             const somUrl = (pokemon.cries && (pokemon.cries.latest || pokemon.cries.legacy)) ? (pokemon.cries.latest || pokemon.cries.legacy) : '';
 
             const card = document.createElement('div');
@@ -521,7 +545,6 @@
             `;
             
             card.onclick = (e) => {
-                // Impede que clique no botão de som abra a tela de detalhes do pokémon
                 if (e.target.closest('.btn-som')) return;
                 abrirDetalhes(pokemon.id);
             };
@@ -529,10 +552,10 @@
         }
 
         function tocarSom(event, url) {
-            event.stopPropagation(); // Evita abrir o card ao clicar no botão
+            event.stopPropagation();
             if (!url) return;
             const audio = new Audio(url);
-            audio.volume = 0.5; // Deixa o som em um volume agradável
+            audio.volume = 0.5;
             audio.play().catch(err => console.log('Áudio bloqueado ou indisponível:', err));
         }
 
@@ -708,8 +731,14 @@
                 const pokemon = await res.json();
 
                 const imgUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
+                const somUrl = (pokemon.cries && (pokemon.cries.latest || pokemon.cries.legacy)) ? (pokemon.cries.latest || pokemon.cries.legacy) : '';
 
                 document.getElementById('detailName').innerText = `#${pokemon.id} - ${pokemon.name}`;
+                
+                // Insere o botão de som ao lado do nome na tela de detalhes
+                const soundContainer = document.getElementById('detailSoundContainer');
+                soundContainer.innerHTML = somUrl ? `<button class="btn-som-detalhe" onclick="tocarSom(event, '${somUrl}')" title="Ouvir som">🔊</button>` : '';
+
                 document.getElementById('detailImg').src = imgUrl;
                 document.getElementById('detailImg').dataset.name = pokemon.name; 
                 
