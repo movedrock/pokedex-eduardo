@@ -96,11 +96,37 @@
             align-items: center;
             cursor: pointer;
             user-select: none;
+            position: relative;
         }
         .card:hover {
             transform: translateY(-5px);
             box-shadow: 0 6px 15px rgba(0,0,0,0.15);
         }
+
+        /* Botão de Som no Card */
+        .btn-som {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #f0f2f5;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            width: 34px;
+            height: 34px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            transition: 0.2s;
+            z-index: 2;
+        }
+        .btn-som:hover {
+            background-color: #cc0000;
+            border-color: #cc0000;
+            transform: scale(1.1);
+        }
+
         .card img {
             width: 120px;
             height: 120px;
@@ -477,6 +503,9 @@
             const grid = document.getElementById('pokedexGrid');
             const tiposHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
             const imagemUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
+            
+            // Pega o som principal da API (prioriza o 'latest', se não houver pega o 'legacy')
+            const somUrl = (pokemon.cries && (pokemon.cries.latest || pokemon.cries.legacy)) ? (pokemon.cries.latest || pokemon.cries.legacy) : '';
 
             const card = document.createElement('div');
             card.className = 'card';
@@ -484,14 +513,27 @@
             card.dataset.name = pokemon.name.toLowerCase();
 
             card.innerHTML = `
-                <small style="color: #999; font-weight: bold;">#${pokemon.id}</small>
+                ${somUrl ? `<button class="btn-som" onclick="tocarSom(event, '${somUrl}')" title="Ouvir som">🔊</button>` : ''}
+                <small style="color: #999; font-weight: bold; align-self: flex-start;">#${pokemon.id}</small>
                 <img src="${imagemUrl}" alt="${pokemon.name}">
                 <h3>${pokemon.name}</h3>
                 <div class="types">${tiposHTML}</div>
             `;
             
-            card.onclick = () => abrirDetalhes(pokemon.id);
+            card.onclick = (e) => {
+                // Impede que clique no botão de som abra a tela de detalhes do pokémon
+                if (e.target.closest('.btn-som')) return;
+                abrirDetalhes(pokemon.id);
+            };
             grid.appendChild(card);
+        }
+
+        function tocarSom(event, url) {
+            event.stopPropagation(); // Evita abrir o card ao clicar no botão
+            if (!url) return;
+            const audio = new Audio(url);
+            audio.volume = 0.5; // Deixa o som em um volume agradável
+            audio.play().catch(err => console.log('Áudio bloqueado ou indisponível:', err));
         }
 
         async function executarBuscaParcial(event) {
