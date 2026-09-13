@@ -449,7 +449,7 @@
                 <h2 id="detailName" style="text-transform: capitalize; font-size: 28px; margin: 0;"></h2>
                 <div id="detailSoundContainer"></div>
             </div>
-            <img id="detailImg" src="" alt="Pokémon" onclick="abrirZoomImagem()" title="Clique para ampliar para desenho">
+            <img id="detailImg" src="" alt="Pokémon" onclick="abrirZoomImagem()" title="Clique para ampliar para desenho" onerror="tratarErroImagem(this)">
             <div class="types" id="detailTypes" style="margin: 15px 0;"></div>
         </div>
 
@@ -469,7 +469,7 @@
         <div class="modal-content">
             <button class="btn-fechar-modal" onclick="fecharZoomImagem()">✕</button>
             <h3 id="modalPokemonName" style="text-transform: capitalize; margin-top: 5px; margin-bottom: 15px; color: #333;"></h3>
-            <img id="modalImg" src="" alt="Zoom Pokémon">
+            <img id="modalImg" src="" alt="Zoom Pokémon" onerror="tratarErroImagem(this)">
             <p style="font-size: 12px; color: #666; margin-top: 15px;">Modo Desenho Ativado ✏️</p>
         </div>
     </div>
@@ -629,10 +629,29 @@
             }
         }
 
+        function tratarErroImagem(imgElement) {
+            // Se a imagem oficial falhar, tenta carregar o sprite padrão comum como fallback automático
+            if (imgElement.dataset.fallbackApplied !== "true") {
+                imgElement.dataset.fallbackApplied = "true";
+                // Tenta puxar o sprite padrão do GitHub se o artwork oficial falhar
+                const pokemonId = imgElement.dataset.id;
+                if (pokemonId) {
+                    imgElement.src = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemonId}.png`;
+                    return;
+                }
+            }
+            // Se tudo falhar, define um ícone SVG genérico de interrogação/silhueta
+            imgElement.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="%23ccc" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>';
+        }
+
         function criarCardPokemon(pokemon) {
             const grid = document.getElementById('pokedexGrid');
             const tiposHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
-            const imagemUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
+            
+            // Define prioridade segura para a imagem
+            const imagemUrl = pokemon.sprites.other?.['official-artwork']?.front_default || 
+                              pokemon.sprites.front_default || 
+                              `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`;
             
             const somUrl = (pokemon.cries && (pokemon.cries.latest || pokemon.cries.legacy)) ? (pokemon.cries.latest || pokemon.cries.legacy) : '';
 
@@ -644,7 +663,7 @@
             card.innerHTML = `
                 ${somUrl ? `<button class="btn-som" onclick="tocarSom(event, '${somUrl}')" title="Ouvir som">🔊</button>` : ''}
                 <small style="color: #999; font-weight: bold; align-self: flex-start;">#${pokemon.id}</small>
-                <img src="${imagemUrl}" alt="${pokemon.name}">
+                <img src="${imagemUrl}" alt="${pokemon.name}" data-id="${pokemon.id}" onerror="tratarErroImagem(this)">
                 <h3>${pokemon.name}</h3>
                 <div class="types">${tiposHTML}</div>
             `;
@@ -809,7 +828,10 @@
                 const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonIdOuNome}`);
                 const pokemon = await res.json();
 
-                const imgUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
+                const imgUrl = pokemon.sprites.other?.['official-artwork']?.front_default || 
+                               pokemon.sprites.front_default || 
+                               `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`;
+                               
                 const somUrl = (pokemon.cries && (pokemon.cries.latest || pokemon.cries.legacy)) ? (pokemon.cries.latest || pokemon.cries.legacy) : '';
 
                 document.getElementById('detailName').innerText = `#${pokemon.id} - ${pokemon.name}`;
@@ -817,8 +839,10 @@
                 const soundContainer = document.getElementById('detailSoundContainer');
                 soundContainer.innerHTML = somUrl ? `<button class="btn-som-detalhe" onclick="tocarSom(event, '${somUrl}')" title="Ouvir som">🔊</button>` : '';
 
-                document.getElementById('detailImg').src = imgUrl;
-                document.getElementById('detailImg').dataset.name = pokemon.name; 
+                const detailImg = document.getElementById('detailImg');
+                detailImg.dataset.id = pokemon.id;
+                detailImg.src = imgUrl;
+                detailImg.dataset.name = pokemon.name; 
                 
                 const divTipos = document.getElementById('detailTypes');
                 divTipos.innerHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
@@ -881,13 +905,13 @@
                 try {
                     const res = await fetch(v.pokemon.url);
                     const dadosVar = await res.json();
-                    const imgVar = dadosVar.sprites.front_default || dadosVar.sprites.other['official-artwork'].front_default;
+                    const imgVar = dadosVar.sprites.front_default || dadosVar.sprites.other?.['official-artwork']?.front_default || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${dadosVar.id}.png`;
 
                     const varDiv = document.createElement('div');
                     varDiv.className = 'evo-step';
                     varDiv.onclick = () => abrirDetalhes(dadosVar.name);
                     varDiv.innerHTML = `
-                        <img src="${imgVar}" alt="${dadosVar.name}">
+                        <img src="${imgVar}" alt="${dadosVar.name}" data-id="${dadosVar.id}" onerror="tratarErroImagem(this)">
                         <div style="font-weight: bold; text-transform: capitalize; font-size: 13px;">${dadosVar.name}</div>
                         <div style="margin-top: 4px;">${dadosVar.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 8px; padding: 2px 4px;">${t.type.name}</span>`).join('')}</div>
                     `;
@@ -918,12 +942,13 @@
                 try {
                     const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${nomePokemon}`);
                     const dados = await res.json();
+                    const imgEvo = dados.sprites.front_default || dados.sprites.other?.['official-artwork']?.front_default || `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${dados.id}.png`;
 
                     const passoDiv = document.createElement('div');
                     passoDiv.className = 'evo-step';
                     passoDiv.onclick = () => abrirDetalhes(dados.id);
                     passoDiv.innerHTML = `
-                        <img src="${dados.sprites.front_default}" alt="${nomePokemon}">
+                        <img src="${imgEvo}" alt="${nomePokemon}" data-id="${dados.id}" onerror="tratarErroImagem(this)">
                         <div style="font-weight: bold; text-transform: capitalize; font-size: 14px;">${nomePokemon}</div>
                         <div style="margin-top: 4px;">${dados.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 9px; padding: 2px 5px;">${t.type.name}</span>`).join('')}</div>
                     `;
