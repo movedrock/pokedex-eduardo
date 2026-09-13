@@ -15,7 +15,8 @@
             font-family: 'Arial', sans-serif;
             background-color: #f0f2f5;
             text-align: center;
-            padding: 20px;
+            padding: 20px 20px 20px 20px;
+            padding-top: 10px; /* Ajustado para compensar o topo fixo */
             color: #333;
             margin: 0;
             outline: none;
@@ -23,15 +24,20 @@
         }
         h1 { color: #cc0000; margin-bottom: 20px; }
 
-        /* Controles de Busca e Filtro */
+        /* Controles de Busca e Filtro (Fixos no Topo) */
         .controls-container {
+            position: sticky;
+            top: 0;
+            background-color: #f0f2f5;
+            padding: 15px 10px;
+            margin-bottom: 25px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 10px;
-            margin-bottom: 25px;
             flex-wrap: wrap;
-            padding: 0 10px;
         }
         .search-wrapper {
             position: relative;
