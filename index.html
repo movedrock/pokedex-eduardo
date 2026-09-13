@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pokédex - Árvore de Evolução e Formas</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f0f2f5;
+            text-align: center;
+            padding: 20px;
+            color: #333;
+            margin: 0;
+            outline: none;
+            caret-color: transparent;
+        }
+        h1 { color: #cc0000; margin-bottom: 20px; }
+
+        /* Controles de Busca e Filtro */
+        .controls-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            padding: 0 10px;
+        }
+        .search-wrapper {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .search-input, .type-select {
+            padding: 12px 16px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            outline: none;
+            background: white;
+            transition: border-color 0.2s;
+            caret-color: #333;
+        }
+        .search-input:focus, .type-select:focus {
+            border-color: #cc0000;
+        }
+        .search-input {
+            width: 220px;
+            padding-right: 40px;
+        }
+        .type-select {
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 13px;
+        }
+        
+        .btn-limpar {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+            display: none;
+        }
+        .btn-limpar:hover { color: #cc0000; }
+        
+        /* Grid Principal */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
+        }
+        .card img {
+            width: 120px;
+            height: 120px;
+            object-fit: contain;
+        }
+        .card h3 {
+            margin: 10px 0 5px 0;
+            text-transform: capitalize;
+        }
+        .types { margin: 8px 0; }
+        .type-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            margin: 2px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+
+        /* Cores dos Tipos */
+        .grass { background-color: #78C850; }
+        .fire { background-color: #F08030; }
+        .water { background-color: #6890F0; }
+        .electric { background-color: #F8D030; color: #333; }
+        .poison { background-color: #A040A0; }
+        .normal { background-color: #A8A878; }
+        .bug { background-color: #A8B820; }
+        .flying { background-color: #A890F0; }
+        .ground { background-color: #E0C068; }
+        .fairy { background-color: #EE99AC; }
+        .fighting { background-color: #C03028; }
+        .psychic { background-color: #F85888; }
+        .rock { background-color: #B8A038; }
+        .ghost { background-color: #705898; }
+        .ice { background-color: #98D8D8; }
+        .dragon { background-color: #7038F8; }
+        .steel { background-color: #B8B8D0; }
+        .dark { background-color: #705848; }
+
+        /* Tela de Detalhes / Árvore */
+        #detailView {
+            display: none;
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+            text-align: center;
+        }
+        .btn-voltar {
+            background-color: #333;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            float: left;
+            margin-bottom: 20px;
+        }
+        .btn-voltar:hover { background-color: #555; }
+        
+        .detail-header img {
+            width: 180px;
+            height: 180px;
+            cursor: zoom-in;
+            transition: transform 0.2s;
+        }
+        .detail-header img:hover {
+            transform: scale(1.05);
+        }
+
+        /* Estilo do Quadro Flutuante (Modal de Zoom) */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: white;
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 90%;
+            max-height: 90%;
+            position: relative;
+            animation: modalZoom 0.2s ease-out;
+        }
+        @keyframes modalZoom {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .modal-content img {
+            width: 300px;
+            height: 300px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto;
+        }
+        .btn-fechar-modal {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            font-weight: bold;
+            color: #666;
+            cursor: pointer;
+        }
+        .btn-fechar-modal:hover { color: #cc0000; }
+
+        .evolution-tree, .variants-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 2px dashed #eee;
+        }
+        .evo-step {
+            background: #f8f9fa;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            width: 130px;
+            cursor: pointer;
+            transition: 0.2s;
+            user-select: none;
+        }
+        .evo-step:hover {
+            border-color: #cc0000;
+            transform: scale(1.05);
+        }
+        .evo-step img {
+            width: 80px;
+            height: 80px;
+        }
+        .evo-arrow {
+            font-size: 24px;
+            font-weight: bold;
+            color: #999;
+        }
+
+        #loading {
+            margin: 30px 0;
+            font-weight: bold;
+            color: #666;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LISTA PRINCIPAL -->
+    <div id="listView">
+        <h1>POKEDEX DO EDUARDO</h1>
+        
+        <!-- Barra de Busca e Filtros -->
+        <div class="controls-container">
+            <div class="search-wrapper">
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar Pokémon..." oninput="executarBuscaParcial(event)">
+                <button id="btnClearSearch" class="btn-limpar" onclick="limparBusca()" title="Limpar busca">✕</button>
+            </div>
+            
+            <!-- Filtro de Tipo -->
+            <select id="typeSelect" class="type-select" style="background-color: #f8f9fa; color: #333;" onchange="mudarCorFiltro(this); buscarPorTipoAPI()">
+                <option value="">Todos os Tipos</option>
+                <option value="fire">Fogo</option>
+                <option value="water">Água</option>
+                <option value="grass">Planta</option>
+                <option value="electric">Elétrico</option>
+                <option value="normal">Normal</option>
+                <option value="bug">Inseto</option>
+                <option value="poison">Venenoso</option>
+                <option value="ground">Terra</option>
+                <option value="fairy">Fada</option>
+                <option value="fighting">Lutador</option>
+                <option value="psychic">Psíquico</option>
+                <option value="rock">Pedra</option>
+                <option value="ghost">Fantasma</option>
+                <option value="ice">Gelo</option>
+                <option value="dragon">Dragão</option>
+                <option value="steel">Aço</option>
+            </select>
+
+            <!-- Filtro de Formas Especiais -->
+            <select id="formSelect" class="type-select" style="background-color: #fff3cd; color: #856404;" onchange="buscarPorFormaEspecial(this)">
+                <option value="">Formas Especiais</option>
+                <option value="mega">Mega Evoluções</option>
+                <option value="gmax">Gigantamax (Giga)</option>
+                <option value="galar">Galarian</option>
+                <option value="alola">Alolan</option>
+                <option value="hisui">Hisuian</option>
+            </select>
+        </div>
+
+        <div id="pokedexGrid" class="grid-container"></div>
+        <div id="loading">Carregando mais Pokémon...</div>
+    </div>
+
+    <!-- TELA DE DETALHES E ÁRVORE DE EVOLUÇÃO -->
+    <div id="detailView">
+        <button class="btn-voltar" onclick="voltarParaLista()">⬅ Voltar para Lista</button>
+        <div style="clear: both;"></div>
+        
+        <div class="detail-header">
+            <h2 id="detailName" style="text-transform: capitalize; font-size: 28px;"></h2>
+            <!-- Imagem clicável com zoom -->
+            <img id="detailImg" src="" alt="Pokémon" onclick="abrirZoomImagem()" title="Clique para ampliar para desenho">
+            <div class="types" id="detailTypes" style="margin: 15px 0;"></div>
+        </div>
+
+        <!-- Seção de Formas Alternativas / Megas do Pokémon atual -->
+        <div id="variantsSection" style="display:none; margin-top: 25px;">
+            <h3 style="color: #d9534f; margin-bottom: 5px;">Formas, Megas e Gigantamax</h3>
+            <div id="variantsContainer" class="variants-container"></div>
+        </div>
+
+        <h3 style="margin-top: 30px; color: #444;">Árvore de Evolução</h3>
+        <p style="font-size: 13px; color: #666;">Clique em qualquer estágio para ver os detalhes daquele Pokémon:</p>
+        <div id="evolutionTree" class="evolution-tree"></div>
+    </div>
+
+    <!-- QUADRO FLUTUANTE (MODAL DE ZOOM PARA DESENHO) -->
+    <div id="zoomModal" class="modal-overlay" onclick="fecharZoomFora(event)">
+        <div class="modal-content">
+            <button class="btn-fechar-modal" onclick="fecharZoomImagem()">✕</button>
+            <h3 id="modalPokemonName" style="text-transform: capitalize; margin-top: 5px; margin-bottom: 15px; color: #333;"></h3>
+            <img id="modalImg" src="" alt="Zoom Pokémon">
+            <p style="font-size: 12px; color: #666; margin-top: 15px;">Modo Desenho Ativado ✏️</p>
+        </div>
+    </div>
+
+    <script>
+        let offset = 0;
+        const limit = 12;
+        let isLoading = false;
+        let listaGeralCache = []; 
+        let pokemonsFiltradosTipo = []; 
+        let offsetTipo = 0;
+
+        let pokemonsFiltradosForma = [];
+        let offsetForma = 0;
+        let modoAtual = 'padrao'; 
+
+        window.onload = async () => {
+            if (document.activeElement) {
+                document.activeElement.blur();
+            }
+            await carregarIndiceGeral();
+            carregarProximos();
+            window.addEventListener('scroll', verificarFimDaPagina);
+        };
+
+        async function carregarIndiceGeral() {
+            try {
+                const res = await fetch('https://pokeapi.co/api/v2/pokemon?limit=1025');
+                const data = await res.json();
+                listaGeralCache = data.results.map((item, index) => {
+                    const id = index + 1;
+                    return { name: item.name, id: id, url: item.url };
+                });
+            } catch (error) {
+                console.error('Erro ao carregar índice geral:', error);
+            }
+        }
+
+        function verificarFimDaPagina() {
+            const termoBusca = document.getElementById('searchInput').value.trim();
+            if (termoBusca !== '') return; 
+
+            if (isLoading || document.getElementById('detailView').style.display === 'block') return;
+
+            const pertoDoFim = window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 300;
+            if (pertoDoFim) {
+                if (modoAtual === 'tipo') {
+                    carregarProximosTipo();
+                } else if (modoAtual === 'forma') {
+                    carregarProximosForma();
+                } else if (modoAtual === 'padrao') {
+                    carregarProximos();
+                }
+            }
+        }
+
+        async function carregarProximos() {
+            isLoading = true;
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const sliceItens = listaGeralCache.slice(offset, offset + limit);
+                if (sliceItens.length === 0) return;
+
+                const pokemonPromessas = sliceItens.map(item => fetch(item.url).then(r => r.json()));
+                const listaPokemons = await Promise.all(pokemonPromessas);
+
+                for (const pokemon of listaPokemons) {
+                    criarCardPokemon(pokemon);
+                }
+
+                offset += limit;
+            } catch (error) {
+                console.error('Erro ao carregar Pokémon:', error);
+            } finally {
+                isLoading = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function carregarProximosTipo() {
+            if (isLoading || offsetTipo >= pokemonsFiltradosTipo.length) return;
+            isLoading = true;
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const sliceItens = pokemonsFiltradosTipo.slice(offsetTipo, offsetTipo + limit);
+                if (sliceItens.length === 0) return;
+
+                const promessas = sliceItens.map(p => fetch(p.url).then(r => r.json()));
+                const pokemons = await Promise.all(promessas);
+
+                for (const pokemon of pokemons) {
+                    criarCardPokemon(pokemon);
+                }
+
+                offsetTipo += limit;
+            } catch (error) {
+                console.error('Erro ao carregar lote do tipo:', error);
+            } finally {
+                isLoading = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function carregarProximosForma() {
+            if (isLoading || offsetForma >= pokemonsFiltradosForma.length) return;
+            isLoading = true;
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const sliceItens = pokemonsFiltradosForma.slice(offsetForma, offsetForma + limit);
+                if (sliceItens.length === 0) return;
+
+                const promessas = sliceItens.map(p => fetch(`https://pokeapi.co/api/v2/pokemon/${p.name}`).then(r => r.json()));
+                const pokemons = await Promise.all(promessas);
+
+                for (const pokemon of pokemons) {
+                    criarCardPokemon(pokemon);
+                }
+
+                offsetForma += limit;
+            } catch (error) {
+                console.error('Erro ao carregar lote de formas:', error);
+            } finally {
+                isLoading = false;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function criarCardPokemon(pokemon) {
+            const grid = document.getElementById('pokedexGrid');
+            const tiposHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
+            const imagemUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
+
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.dataset.id = pokemon.id;
+            card.dataset.name = pokemon.name.toLowerCase();
+
+            card.innerHTML = `
+                <small style="color: #999; font-weight: bold;">#${pokemon.id}</small>
+                <img src="${imagemUrl}" alt="${pokemon.name}">
+                <h3>${pokemon.name}</h3>
+                <div class="types">${tiposHTML}</div>
+            `;
+            
+            card.onclick = () => abrirDetalhes(pokemon.id);
+            grid.appendChild(card);
+        }
+
+        async function executarBuscaParcial(event) {
+            const termo = event.target.value.toLowerCase().trim();
+            const btnLimpar = document.getElementById('btnClearSearch');
+            const grid = document.getElementById('pokedexGrid');
+
+            if (termo === '') {
+                limparBusca();
+                return;
+            }
+
+            btnLimpar.style.display = 'block';
+            document.getElementById('typeSelect').value = ''; 
+            document.getElementById('typeSelect').style.backgroundColor = '#f8f9fa';
+            document.getElementById('typeSelect').style.color = '#333';
+            document.getElementById('formSelect').value = '';
+            modoAtual = 'padrao';
+
+            const encontrados = listaGeralCache.filter(p => p.name.includes(termo) || p.id.toString() === termo);
+
+            grid.innerHTML = '';
+            if (encontrados.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; color: #666; font-weight: bold;">Nenhum Pokémon encontrado com essas letras.</p>';
+                return;
+            }
+
+            const limiteExibicao = encontrados.slice(0, 24);
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const promessas = limiteExibicao.map(p => fetch(p.url).then(r => r.json()));
+                const pokemons = await Promise.all(promessas);
+                for (const pokemon of pokemons) {
+                    criarCardPokemon(pokemon);
+                }
+            } catch (error) {
+                console.error('Erro na busca parcial:', error);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function buscarPorTipoAPI() {
+            const tipoSelecionado = document.getElementById('typeSelect').value;
+            const grid = document.getElementById('pokedexGrid');
+
+            if (tipoSelecionado === "") {
+                limparBusca();
+                return;
+            }
+
+            document.getElementById('searchInput').value = '';
+            document.getElementById('btnClearSearch').style.display = 'none';
+            document.getElementById('formSelect').value = '';
+
+            modoAtual = 'tipo';
+            grid.innerHTML = '';
+            document.getElementById('loading').style.display = 'block';
+            pokemonsFiltradosTipo = [];
+            offsetTipo = 0;
+
+            try {
+                const res = await fetch(`https://pokeapi.co/api/v2/type/${tipoSelecionado}`);
+                const data = await res.json();
+                pokemonsFiltradosTipo = data.pokemon.map(p => p.pokemon);
+                await carregarProximosTipo();
+            } catch (error) {
+                console.error('Erro ao buscar por tipo:', error);
+                grid.innerHTML = '<p style="grid-column: 1/-1; color: #cc0000; font-weight: bold;">Erro ao carregar pokémons deste tipo.</p>';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function buscarPorFormaEspecial(selectElement) {
+            const termoFiltro = selectElement.value;
+            const grid = document.getElementById('pokedexGrid');
+
+            if (termoFiltro === "") {
+                limparBusca();
+                return;
+            }
+
+            document.getElementById('searchInput').value = '';
+            document.getElementById('btnClearSearch').style.display = 'none';
+            document.getElementById('typeSelect').value = '';
+            document.getElementById('typeSelect').style.backgroundColor = '#f8f9fa';
+            document.getElementById('typeSelect').style.color = '#333';
+
+            modoAtual = 'forma';
+            grid.innerHTML = '';
+            document.getElementById('loading').style.display = 'block';
+            pokemonsFiltradosForma = [];
+            offsetForma = 0;
+
+            try {
+                const res = await fetch('https://pokeapi.co/api/v2/pokemon-form?limit=1500');
+                const data = await res.json();
+
+                pokemonsFiltradosForma = data.results.filter(f => f.name.includes(termoFiltro));
+
+                if (pokemonsFiltradosForma.length === 0) {
+                    grid.innerHTML = `<p style="grid-column: 1/-1; color: #666; font-weight: bold;">Nenhuma forma correspondente encontrada.</p>`;
+                    return;
+                }
+
+                await carregarProximosForma();
+            } catch (error) {
+                console.error('Erro ao buscar formas especiais:', error);
+                grid.innerHTML = `<p style="grid-column: 1/-1; color: #cc0000; font-weight: bold;">Erro ao carregar formas especiais.</p>`;
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function limparBusca() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('btnClearSearch').style.display = 'none';
+            document.getElementById('typeSelect').value = '';
+            document.getElementById('typeSelect').style.backgroundColor = '#f8f9fa';
+            document.getElementById('typeSelect').style.color = '#333';
+            document.getElementById('formSelect').value = '';
+            
+            document.getElementById('pokedexGrid').innerHTML = '';
+            offset = 0;
+            modoAtual = 'padrao';
+            pokemonsFiltradosTipo = [];
+            offsetTipo = 0;
+            pokemonsFiltradosForma = [];
+            offsetForma = 0;
+            carregarProximos();
+        }
+
+        function mudarCorFiltro(selectElement) {
+            const valor = selectElement.value;
+            const coresMap = {
+                "fire": "#F08030",
+                "water": "#6890F0",
+                "grass": "#78C850",
+                "electric": "#F8D030",
+                "normal": "#A8A878",
+                "bug": "#A8B820",
+                "poison": "#A040A0",
+                "ground": "#E0C068",
+                "fairy": "#EE99AC",
+                "fighting": "#C03028",
+                "psychic": "#F85888",
+                "rock": "#B8A038",
+                "ghost": "#705898",
+                "ice": "#98D8D8",
+                "dragon": "#7038F8",
+                "steel": "#B8B8D0"
+            };
+
+            if (valor && coresMap[valor]) {
+                selectElement.style.backgroundColor = coresMap[valor];
+                selectElement.style.color = (valor === 'electric') ? '#333' : '#fff';
+            } else {
+                selectElement.style.backgroundColor = '#f8f9fa';
+                selectElement.style.color = '#333';
+            }
+        }
+
+        async function abrirDetalhes(pokemonIdOuNome) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('listView').style.display = 'none';
+            document.getElementById('detailView').style.display = 'block';
+
+            try {
+                const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${pokemonIdOuNome}`);
+                const pokemon = await res.json();
+
+                const imgUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
+
+                document.getElementById('detailName').innerText = `#${pokemon.id} - ${pokemon.name}`;
+                document.getElementById('detailImg').src = imgUrl;
+                document.getElementById('detailImg').dataset.name = pokemon.name; // Salva o nome para o modal
+                
+                const divTipos = document.getElementById('detailTypes');
+                divTipos.innerHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
+
+                const nomeBaseEspecie = pokemon.name.split('-')[0];
+                const resEspecie = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${nomeBaseEspecie}`);
+                const dadosEspecie = await resEspecie.json();
+
+                carregarVariantesEspecie(dadosEspecie.varieties, pokemon.name);
+
+                if (dadosEspecie.evolution_chain) {
+                    const resEvo = await fetch(dadosEspecie.evolution_chain.url);
+                    const dadosEvo = await resEvo.json();
+                    montarArvoreEvolucao(dadosEvo.chain);
+                } else {
+                    document.getElementById('evolutionTree').innerHTML = 'Sem dados de evolução.';
+                }
+            } catch (err) {
+                console.error('Erro ao abrir detalhes:', err);
+            }
+        }
+
+        // Funções do Modal de Zoom para Desenho
+        function abrirZoomImagem() {
+            const imgDetalhe = document.getElementById('detailImg');
+            const modal = document.getElementById('zoomModal');
+            const modalImg = document.getElementById('modalImg');
+            const modalName = document.getElementById('modalPokemonName');
+
+            modalImg.src = imgDetalhe.src;
+            modalName.innerText = imgDetalhe.dataset.name || 'Pokémon';
+            modal.style.display = 'flex';
+        }
+
+        function fecharZoomImagem() {
+            document.getElementById('zoomModal').style.display = 'none';
+        }
+
+        function fecharZoomFora(event) {
+            const modalContent = document.querySelector('.modal-content');
+            if (!modalContent.contains(event.target)) {
+                fecharZoomImagem();
+            }
+        }
+
+        async function carregarVariantesEspecie(varieties, nomeAtual) {
+            const section = document.getElementById('variantsSection');
+            const container = document.getElementById('variantsContainer');
+            container.innerHTML = '';
+
+            const outrasVariantes = varieties.filter(v => v.pokemon.name !== nomeAtual);
+
+            if (outrasVariantes.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+
+            for (const v of outrasVariantes) {
+                try {
+                    const res = await fetch(v.pokemon.url);
+                    const dadosVar = await res.json();
+                    const imgVar = dadosVar.sprites.front_default || dadosVar.sprites.other['official-artwork'].front_default;
+
+                    const varDiv = document.createElement('div');
+                    varDiv.className = 'evo-step';
+                    varDiv.onclick = () => abrirDetalhes(dadosVar.name);
+                    varDiv.innerHTML = `
+                        <img src="${imgVar}" alt="${dadosVar.name}">
+                        <div style="font-weight: bold; text-transform: capitalize; font-size: 13px;">${dadosVar.name}</div>
+                        <div style="margin-top: 4px;">${dadosVar.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 8px; padding: 2px 4px;">${t.type.name}</span>`).join('')}</div>
+                    `;
+                    container.appendChild(varDiv);
+                } catch (e) {
+                    console.error('Erro ao carregar variante:', e);
+                }
+            }
+        }
+
+        async function montarArvoreEvolucao(chain) {
+            const treeContainer = document.getElementById('evolutionTree');
+            treeContainer.innerHTML = 'Carregando evoluções...';
+
+            let passos = [];
+            let atual = chain;
+            passos.push(atual.species.name);
+
+            while (atual.evolves_to && atual.evolves_to.length > 0) {
+                atual = atual.evolves_to[0];
+                passos.push(atual.species.name);
+            }
+
+            treeContainer.innerHTML = '';
+
+            for (let i = 0; i < passos.length; i++) {
+                const nomePokemon = passos[i];
+                try {
+                    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${nomePokemon}`);
+                    const dados = await res.json();
+
+                    const passoDiv = document.createElement('div');
+                    passoDiv.className = 'evo-step';
+                    passoDiv.onclick = () => abrirDetalhes(dados.id);
+                    passoDiv.innerHTML = `
+                        <img src="${dados.sprites.front_default}" alt="${nomePokemon}">
+                        <div style="font-weight: bold; text-transform: capitalize; font-size: 14px;">${nomePokemon}</div>
+                        <div style="margin-top: 4px;">${dados.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 9px; padding: 2px 5px;">${t.type.name}</span>`).join('')}</div>
+                    `;
+                    treeContainer.appendChild(passoDiv);
+
+                    if (i < passos.length - 1) {
+                        const seta = document.createElement('div');
+                        seta.className = 'evo-arrow';
+                        seta.innerText = '➔';
+                        treeContainer.appendChild(seta);
+                    }
+                } catch (err) {
+                    console.error('Erro passo evo:', err);
+                }
+            }
+        }
+
+        function voltarParaLista() {
+            document.getElementById('detailView').style.display = 'none';
+            document.getElementById('listView').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
