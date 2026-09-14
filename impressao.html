@@ -61,7 +61,7 @@
             align-items: center;
             page-break-inside: avoid;
             background: #fff;
-            height: 105px;
+            height: 110px; /* Levemente ajustado para caber o nome da evo */
             box-sizing: border-box;
         }
 
@@ -103,18 +103,18 @@
             font-size: 8px;
         }
 
-        /* Miniaturas da Linha de Evolução Compacta */
+        /* Miniaturas e Nomes da Linha de Evolução */
         .card-evos {
             display: flex;
             flex-direction: column;
             align-items: center;
             border-left: 2px dashed #eee;
             padding-left: 10px;
-            min-width: 60px;
+            min-width: 70px;
         }
 
-        .card-evos span {
-            font-size: 8px;
+        .card-evos span.titulo-evo {
+            font-size: 7px;
             color: #888;
             margin-bottom: 2px;
             font-weight: bold;
@@ -123,7 +123,7 @@
 
         .evo-mini-list {
             display: flex;
-            gap: 4px;
+            gap: 6px;
             align-items: center;
         }
 
@@ -132,12 +132,26 @@
         }
 
         .evo-mini-item img {
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             object-fit: contain;
             background: #f9f9f9;
             border-radius: 4px;
             border: 1px solid #eee;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .evo-mini-item span {
+            font-size: 7px;
+            color: #555;
+            text-transform: capitalize;
+            display: block;
+            max-width: 35px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-top: 1px;
         }
 
         /* Cores dos Tipos */
@@ -209,7 +223,6 @@
             try {
                 let especiesCache = {};
 
-                // Buscando em blocos organizados para garantir a ordem sequencial exata
                 for (let i = inicio; i <= fim; i++) {
                     try {
                         const resposta = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
@@ -238,17 +251,22 @@
                             if (listaEvos.length > 1) {
                                 let miniImgs = '';
                                 for (let evo of listaEvos) {
-                                    miniImgs += `<div class="evo-mini-item"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${evo.id}.png" title="${evo.name}" onerror="this.style.display='none'"></div>`;
+                                    miniImgs += `
+                                        <div class="evo-mini-item">
+                                            <img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${evo.id}.png" title="${evo.name}" onerror="this.style.display='none'">
+                                            <span>${evo.name}</span>
+                                        </div>
+                                    `;
                                 }
                                 evosHTML = `
                                     <div class="card-evos">
-                                        <span>Evoluções</span>
+                                        <span class="titulo-evo">Evoluções</span>
                                         <div class="evo-mini-list">${miniImgs}</div>
                                     </div>
                                 `;
                             }
                         } catch (e) {
-                            // Ignora erro isolado de evolução para não parar a geração
+                            // Ignora erro isolado de evolução
                         }
 
                         const card = document.createElement('div');
@@ -270,7 +288,7 @@
                     }
                 }
 
-                status.innerText = `Pronto! Todos os Pokémon da Geração foram carregados na ordem correta.`;
+                status.innerText = `Pronto! Todos os Pokémon da Geração carregados com nomes das evoluções.`;
             } catch (error) {
                 console.error(error);
                 status.innerText = 'Erro ao carregar os dados. Tente novamente.';
