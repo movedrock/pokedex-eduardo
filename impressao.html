@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerador de Pokédex para Impressão</title>
+    <style>
+        /* Configuração da Página A4 para Impressão */
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #fff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .config-bar {
+            background: #333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .config-bar select, .config-bar button {
+            padding: 8px 12px;
+            font-size: 14px;
+            margin: 0 5px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .config-bar button {
+            background-color: #cc0000;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Grade de Impressão (Aprox. 10 pokémons por página) */
+        .print-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 colunas */
+            gap: 15px;
+            max-width: 180mm;
+            margin: 0 auto;
+            padding-top: 20px;
+        }
+
+        .print-card {
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            page-break-inside: avoid;
+            background: #fff;
+            height: 90px;
+        }
+
+        .print-card img {
+            width: 75px;
+            height: 75px;
+            object-fit: contain;
+        }
+
+        .card-info {
+            text-align: left;
+        }
+
+        .card-info small {
+            color: #666;
+            font-weight: bold;
+        }
+
+        .card-info h3 {
+            margin: 2px 0 6px 0;
+            text-transform: capitalize;
+            font-size: 16px;
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 2px 6px;
+            margin-right: 3px;
+            border-radius: 3px;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 9px;
+        }
+
+        /* Cores dos Tipos */
+        .grass { background-color: #78C850; }
+        .fire { background-color: #F08030; }
+        .water { background-color: #6890F0; }
+        .electric { background-color: #F8D030; color: #333; }
+        .poison { background-color: #A040A0; }
+        .normal { background-color: #A8A878; }
+        .bug { background-color: #A8B820; }
+        .flying { background-color: #A890F0; }
+        .ground { background-color: #E0C068; }
+        .fairy { background-color: #EE99AC; }
+        .fighting { background-color: #C03028; }
+        .psychic { background-color: #F85888; }
+        .rock { background-color: #B8A038; }
+        .ghost { background-color: #705898; }
+        .ice { background-color: #98D8D8; }
+        .dragon { background-color: #7038F8; }
+        .steel { background-color: #B8B8D0; }
+        .dark { background-color: #705848; }
+
+        #status {
+            text-align: center;
+            margin: 20px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        /* Esconde a barra de configuração quando for imprimir */
+        @media print {
+            .config-bar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barra de Controle (Some na Impressão) -->
+    <div class="config-bar">
+        <label>Escolha o Lote:</label>
+        <select id="loteSelect">
+            <option value="1-151">Geração 1 (1 ao 151)</option>
+            <option value="152-251">Geração 2 (152 ao 251)</option>
+            <option value="252-386">Geração 3 (252 ao 386)</option>
+        </select>
+        <button onclick="carregarParaImpressao()">Gerar Fichas</button>
+        <button onclick="window.print()" style="background-color: #333;">🖨️ Imprimir / Salvar PDF</button>
+    </div>
+
+    <div id="status">Selecione um lote acima e clique em "Gerar Fichas"</div>
+    <div id="printGrid" class="print-container"></div>
+
+    <script>
+        async function carregarParaImpressao() {
+            const grid = document.getElementById('printGrid');
+            const status = document.getElementById('status');
+            const [inicio, fim] = document.getElementById('loteSelect').value.split('-').map(Number);
+            
+            grid.innerHTML = '';
+            status.innerText = 'Carregando Pokémons da API, aguarde...';
+
+            try {
+                // Monta a lista de URLs do lote escolhido
+                let promessas = [];
+                for (let i = inicio; i <= fim; i++) {
+                    promessas.push(fetch(`https://pokeapi.co/api/v2/pokemon/${i}`).then(r => r.json()));
+                }
+
+                const pokemons = await Promise.all(promessas);
+                status.innerText = `Pronto! ${pokemons.length} Pokémon carregados para impressão.`;
+
+                for (const pokemon of pokemons) {
+                    const imagemUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
+                    const tiposHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
+
+                    const card = document.createElement('div');
+                    card.className = 'print-card';
+                    card.innerHTML = `
+                        <img src="${imagemUrl}" alt="${pokemon.name}">
+                        <div class="card-info">
+                            <small>#${pokemon.id}</small>
+                            <h3>${pokemon.name}</h3>
+                            <div>${tiposHTML}</div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                }
+            } catch (error) {
+                console.error(error);
+                status.innerText = 'Erro ao carregar os dados. Tente novamente.';
+            }
+        }
+    </script>
+</body>
+</html>
