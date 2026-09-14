@@ -137,58 +137,304 @@
     <!-- Barra de Controle (Some na Impressão) -->
     <div class="config-bar">
         <label>Escolha o Lote:</label>
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerador de Pokédex para Impressão</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 10mm;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #fff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .config-bar {
+            background: #333;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .config-bar select, .config-bar button {
+            padding: 8px 12px;
+            font-size: 14px;
+            margin: 0 5px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .config-bar button {
+            background-color: #cc0000;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Grade de Impressão */
+        .print-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-width: 190mm;
+            margin: 0 auto;
+            padding-top: 15px;
+        }
+
+        .print-card {
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            page-break-inside: avoid;
+            background: #fff;
+            height: 105px;
+            box-sizing: border-box;
+        }
+
+        .card-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-main img {
+            width: 70px;
+            height: 70px;
+            object-fit: contain;
+        }
+
+        .card-info {
+            text-align: left;
+        }
+
+        .card-info small {
+            color: #666;
+            font-weight: bold;
+        }
+
+        .card-info h3 {
+            margin: 2px 0 4px 0;
+            text-transform: capitalize;
+            font-size: 15px;
+        }
+
+        .type-badge {
+            display: inline-block;
+            padding: 2px 5px;
+            margin-right: 2px;
+            border-radius: 3px;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 8px;
+        }
+
+        /* Miniaturas da Linha de Evolução Compacta */
+        .card-evos {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            border-left: 2px dashed #eee;
+            padding-left: 10px;
+            min-width: 60px;
+        }
+
+        .card-evos span {
+            font-size: 8px;
+            color: #888;
+            margin-bottom: 2px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .evo-mini-list {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .evo-mini-item {
+            text-align: center;
+        }
+
+        .evo-mini-item img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+
+        /* Cores dos Tipos */
+        .grass { background-color: #78C850; }
+        .fire { background-color: #F08030; }
+        .water { background-color: #6890F0; }
+        .electric { background-color: #F8D030; color: #333; }
+        .poison { background-color: #A040A0; }
+        .normal { background-color: #A8A878; }
+        .bug { background-color: #A8B820; }
+        .flying { background-color: #A890F0; }
+        .ground { background-color: #E0C068; }
+        .fairy { background-color: #EE99AC; }
+        .fighting { background-color: #C03028; }
+        .psychic { background-color: #F85888; }
+        .rock { background-color: #B8A038; }
+        .ghost { background-color: #705898; }
+        .ice { background-color: #98D8D8; }
+        .dragon { background-color: #7038F8; }
+        .steel { background-color: #B8B8D0; }
+        .dark { background-color: #705848; }
+
+        #status {
+            text-align: center;
+            margin: 20px;
+            font-weight: bold;
+            color: #666;
+        }
+
+        @media print {
+            .config-bar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="config-bar">
+        <label>Geração:</label>
         <select id="loteSelect">
-            <option value="1-151">Geração 1 (1 ao 151)</option>
-            <option value="152-251">Geração 2 (152 ao 251)</option>
-            <option value="252-386">Geração 3 (252 ao 386)</option>
+            <option value="1-151">Geração 1 (Kanto: 1-151)</option>
+            <option value="152-251">Geração 2 (Johto: 152-251)</option>
+            <option value="252-386">Geração 3 (Hoenn: 252-386)</option>
+            <option value="387-493">Geração 4 (Sinnoh: 387-493)</option>
+            <option value="494-649">Geração 5 (Unova: 494-649)</option>
+            <option value="650-721">Geração 6 (Kalos: 650-721)</option>
+            <option value="722-809">Geração 7 (Alola: 722-809)</option>
+            <option value="810-905">Geração 8 (Galar: 810-905)</option>
+            <option value="906-1025">Geração 9 (Paldea: 906-1025)</option>
         </select>
         <button onclick="carregarParaImpressao()">Gerar Fichas</button>
         <button onclick="window.print()" style="background-color: #333;">🖨️ Imprimir / Salvar PDF</button>
     </div>
 
-    <div id="status">Selecione um lote acima e clique em "Gerar Fichas"</div>
+    <div id="status">Selecione uma geração acima e clique em "Gerar Fichas"</div>
     <div id="printGrid" class="print-container"></div>
 
     <script>
         async function carregarParaImpressao() {
             const grid = document.getElementById('printGrid');
             const status = document.getElementById('status');
-            const [inicio, fim] = document.getElementById('loteSelect').value.split('-').map(Number);
+            const [inicio, fim] = document.getElementById('loteSelect'].value.split('-').map(Number);
             
             grid.innerHTML = '';
-            status.innerText = 'Carregando Pokémons da API, aguarde...';
+            status.innerText = 'Carregando Pokémons e árvores de evolução, aguarde...';
 
             try {
-                // Monta a lista de URLs do lote escolhido
                 let promessas = [];
                 for (let i = inicio; i <= fim; i++) {
                     promessas.push(fetch(`https://pokeapi.co/api/v2/pokemon/${i}`).then(r => r.json()));
                 }
 
                 const pokemons = await Promise.all(promessas);
-                status.innerText = `Pronto! ${pokemons.length} Pokémon carregados para impressão.`;
+                status.innerText = `Processando detalhes de ${pokemons.length} Pokémon...`;
+
+                // Otimização: Cache de cadeias de evolução para evitar requisições repetidas da espécie
+                let especiesCache = {};
 
                 for (const pokemon of pokemons) {
                     const imagemUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
                     const tiposHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
 
+                    // Buscar evolução de forma inteligente
+                    let evosHTML = '';
+                    try {
+                        const nomeBase = pokemon.name.split('-')[0];
+                        if (!especiesCache[nomeBase]) {
+                            const resEsp = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${nomeBase}`);
+                            const dadosEsp = await resEsp.json();
+                            if (dadosEsp.evolution_chain) {
+                                const resEvo = await fetch(dadosEsp.evolution_chain.url);
+                                const dadosEvo = await resEvo.json();
+                                especiesCache[nomeBase] = extrairNomesEvolucao(dadosEvo.chain);
+                            } else {
+                                especiesCache[nomeBase] = [];
+                            }
+                        }
+
+                        const listaEvoNomes = especiesCache[nomeBase];
+                        if (listaEvoNomes.length > 1) {
+                            let miniImgs = '';
+                            // Busca rápida dos sprites pequenos das evoluções
+                            for (let evoNome of listaEvoNomes) {
+                                // Tenta pegar de um cache rápido global de sprites se já passou por ele, senão usa rota padrão
+                                miniImgs += `<div class="evo-mini-item"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${obterIdPorNome(evoNome, pokemons, inicio)}.png" title="${evoNome}" onerror="this.style.display='none'"></div>`;
+                            }
+                            evosHTML = `
+                                <div class="card-evos">
+                                    <span>Evoluções</span>
+                                    <div class="evo-mini-list">${miniImgs}</div>
+                                </div>
+                            `;
+                        }
+                    } catch (e) {
+                        // Se falhar a árvore, apenas omite o bloco lateral para não travar a impressão
+                    }
+
                     const card = document.createElement('div');
                     card.className = 'print-card';
                     card.innerHTML = `
-                        <img src="${imagemUrl}" alt="${pokemon.name}">
-                        <div class="card-info">
-                            <small>#${pokemon.id}</small>
-                            <h3>${pokemon.name}</h3>
-                            <div>${tiposHTML}</div>
+                        <div class="card-main">
+                            <img src="${imagemUrl}" alt="${pokemon.name}">
+                            <div class="card-info">
+                                <small>#${pokemon.id}</small>
+                                <h3>${pokemon.name}</h3>
+                                <div>${tiposHTML}</div>
+                            </div>
                         </div>
+                        ${evosHTML}
                     `;
                     grid.appendChild(card);
                 }
+
+                status.innerText = `Pronto! ${pokemons.length} Pokémon carregados com sucesso.`;
             } catch (error) {
                 console.error(error);
                 status.innerText = 'Erro ao carregar os dados. Tente novamente.';
             }
         }
+
+        function extrairNomesEvolucao(chain) {
+            let passos = [chain.species.name];
+            let atual = chain;
+            while (atual.evolves_to && atual.evolves_to.length > 0) {
+                atual = atual.evolves_to[0];
+                passos.push(atual.species.name);
+            }
+            return passos;
+        }
+
+        function obterIdPorNome(nome, listaAtual, offsetBase) {
+            // Tenta achar o ID na lista carregada ou faz uma estimativa segura para o link do sprite padrão
+            const p = listaAtual.find(item => item.name === nome);
+            if (p) return p.id;
+            return 1; // Fallback genérico se não achar na mesma listagem
+        }
     </script>
 </body>
 </html>
+
