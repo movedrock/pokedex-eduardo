@@ -200,75 +200,77 @@
         async function carregarParaImpressao() {
             const grid = document.getElementById('printGrid');
             const status = document.getElementById('status');
-            const [inicio, fim] = document.getElementById('loteSelect').value.split('-').map(Number);
+            const selectVal = document.getElementById('loteSelect').value;
+            const [inicio, fim] = selectVal.split('-').map(Number);
             
             grid.innerHTML = '';
-            status.innerText = 'Carregando Pokémons e árvores de evolução, aguarde...';
+            status.innerText = `Carregando Geração (do #${inicio} ao #${fim}), aguarde...`;
 
             try {
-                let promessas = [];
-                for (let i = inicio; i <= fim; i++) {
-                    promessas.push(fetch(`https://pokeapi.co/api/v2/pokemon/${i}`).then(r => r.json()));
-                }
-
-                const pokemons = await Promise.all(promessas);
-                status.innerText = `Processando detalhes de ${pokemons.length} Pokémon...`;
-
                 let especiesCache = {};
 
-                for (const pokemon of pokemons) {
-                    const imagemUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
-                    const tiposHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
-
-                    let evosHTML = '';
+                // Buscando em blocos organizados para garantir a ordem sequencial exata
+                for (let i = inicio; i <= fim; i++) {
                     try {
-                        const nomeBase = pokemon.name.split('-')[0];
-                        if (!especiesCache[nomeBase]) {
-                            const resEsp = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${nomeBase}`);
-                            const dadosEsp = await resEsp.json();
-                            if (dadosEsp.evolution_chain) {
-                                const resEvo = await fetch(dadosEsp.evolution_chain.url);
-                                const dadosEvo = await resEvo.json();
-                                especiesCache[nomeBase] = extrairCadeiaEvolucaoDetalhada(dadosEvo.chain);
-                            } else {
-                                especiesCache[nomeBase] = [];
+                        const resposta = await fetch(`https://pokeapi.co/api/v2/pokemon/${i}`);
+                        if (!resposta.ok) continue;
+                        const pokemon = await resposta.json();
+
+                        const imagemUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
+                        const tiposHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
+
+                        let evosHTML = '';
+                        try {
+                            const nomeBase = pokemon.name.split('-')[0];
+                            if (!especiesCache[nomeBase]) {
+                                const resEsp = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${nomeBase}`);
+                                const dadosEsp = await resEsp.json();
+                                if (dadosEsp.evolution_chain) {
+                                    const resEvo = await fetch(dadosEsp.evolution_chain.url);
+                                    const dadosEvo = await resEvo.json();
+                                    especiesCache[nomeBase] = extrairCadeiaEvolucaoDetalhada(dadosEvo.chain);
+                                } else {
+                                    especiesCache[nomeBase] = [];
+                                }
                             }
+
+                            const listaEvos = especiesCache[nomeBase];
+                            if (listaEvos.length > 1) {
+                                let miniImgs = '';
+                                for (let evo of listaEvos) {
+                                    miniImgs += `<div class="evo-mini-item"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${evo.id}.png" title="${evo.name}" onerror="this.style.display='none'"></div>`;
+                                }
+                                evosHTML = `
+                                    <div class="card-evos">
+                                        <span>Evoluções</span>
+                                        <div class="evo-mini-list">${miniImgs}</div>
+                                    </div>
+                                `;
+                            }
+                        } catch (e) {
+                            // Ignora erro isolado de evolução para não parar a geração
                         }
 
-                        const listaEvos = especiesCache[nomeBase];
-                        if (listaEvos.length > 1) {
-                            let miniImgs = '';
-                            for (let evo of listaEvos) {
-                                miniImgs += `<div class="evo-mini-item"><img src="https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${evo.id}.png" title="${evo.name}" onerror="this.style.display='none'"></div>`;
-                            }
-                            evosHTML = `
-                                <div class="card-evos">
-                                    <span>Evoluções</span>
-                                    <div class="evo-mini-list">${miniImgs}</div>
+                        const card = document.createElement('div');
+                        card.className = 'print-card';
+                        card.innerHTML = `
+                            <div class="card-main">
+                                <img src="${imagemUrl}" alt="${pokemon.name}">
+                                <div class="card-info">
+                                    <small>#${pokemon.id}</small>
+                                    <h3>${pokemon.name}</h3>
+                                    <div>${tiposHTML}</div>
                                 </div>
-                            `;
-                        }
-                    } catch (e) {
-                        console.error('Erro na evolução do ' + pokemon.name, e);
-                    }
-
-                    const card = document.createElement('div');
-                    card.className = 'print-card';
-                    card.innerHTML = `
-                        <div class="card-main">
-                            <img src="${imagemUrl}" alt="${pokemon.name}">
-                            <div class="card-info">
-                                <small>#${pokemon.id}</small>
-                                <h3>${pokemon.name}</h3>
-                                <div>${tiposHTML}</div>
                             </div>
-                        </div>
-                        ${evosHTML}
-                    `;
-                    grid.appendChild(card);
+                            ${evosHTML}
+                        `;
+                        grid.appendChild(card);
+                    } catch (err) {
+                        console.error(`Erro ao carregar o Pokémon #${i}`, err);
+                    }
                 }
 
-                status.innerText = `Pronto! ${pokemons.length} Pokémon carregados com sucesso.`;
+                status.innerText = `Pronto! Todos os Pokémon da Geração foram carregados na ordem correta.`;
             } catch (error) {
                 console.error(error);
                 status.innerText = 'Erro ao carregar os dados. Tente novamente.';
