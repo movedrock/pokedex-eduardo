@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Especiais.json - Pokédex do Leo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            text-align: center;
+            padding: 50px;
+            color: #333;
+        }
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        button {
+            background-color: #cc0000;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+            margin-top: 20px;
+        }
+        button:hover {
+            background-color: #990000;
+            transform: scale(1.05);
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        #status {
+            margin-top: 25px;
+            font-weight: bold;
+            color: #555;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h1>Gerador de Formas Especiais</h1>
+        <p>Esta ferramenta varre o endpoint de formas da PokéAPI, processa todas as variações e gera o arquivo <strong>especiais.json</strong> pronto para o seu Modo Apresentação.</p>
+        
+        <button id="btnGerar" onclick="gerarJsonEspeciais()">Gerar e Baixar especiais.json</button>
+        
+        <div id="status">Aguardando comando...</div>
+    </div>
+
+    <script>
+        async function gerarJsonEspeciais() {
+            const btn = document.getElementById('btnGerar');
+            const status = document.getElementById('status');
+            
+            btn.disabled = true;
+            status.innerText = "Conectando à PokéAPI e buscando a lista de formas (isso pode levar alguns segundos)...";
+
+            try {
+                // Busca o endpoint de formas da API (limite alto para pegar todas)
+                const res = await fetch('https://pokeapi.co/api/v2/pokemon-form?limit=1500');
+                if (!res.ok) throw new Error('Erro ao conectar com a PokéAPI');
+                
+                const data = await res.json();
+                
+                status.innerText = `Processando ${data.results.length} formas encontradas...`;
+
+                // Transforma a lista da API na nossa estrutura limpa com IDs sequenciais (1, 2, 3...)
+                const listaEspeciais = data.results.map((item, index) => {
+                    return {
+                        id: index + 1,
+                        name: item.name
+                    };
+                });
+
+                // Cria o arquivo JSON em formato de texto estruturado
+                const jsonString = JSON.stringify(listaEspeciais, null, 2);
+                
+                // Cria um link virtual para forçar o download automático no navegador
+                const blob = new Blob([jsonString], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'especiais.json';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                status.innerText = `Sucesso! Arquivo 'especiais.json' gerado com ${listaEspeciais.length} itens e baixado com sucesso. Agora basta salvá-lo no seu projeto do GitHub!`;
+            } catch (error) {
+                console.error(error);
+                status.innerText = "Ocorreu um erro ao gerar o arquivo. Verifique o console do navegador.";
+            } finally {
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
