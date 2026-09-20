@@ -564,6 +564,7 @@
         let modoAtual = 'padrao';
         let tipoAtualSelecionado = '';
         let slideshowInterval = null;
+        let listaEspeciaisCache = []; // Cache para armazenar os itens de especiais.json
 
         const traducaoTipos = {
             "fire": "Fogo",
@@ -809,7 +810,6 @@
                 return;
             }
 
-            // Atualiza o visual do botão de filtro com a cor e nome traduzido do tipo escolhido
             const coresMap = {
                 "fire": "#F08030", "water": "#6890F0", "grass": "#78C850",
                 "electric": "#F8D030", "normal": "#A8A878", "bug": "#A8B820",
@@ -977,10 +977,24 @@
             }
         }
 
-        /* Funções do Modo Apresentação (Slideshow) */
+        /* Novas Funções do Modo Apresentação (Slideshow baseado em especiais.json) */
         async function iniciarSlideshow() {
             const modal = document.getElementById('slideshowModal');
             modal.style.display = 'flex';
+
+            // Carrega o arquivo especiais.json caso ainda não tenha sido carregado
+            if (listaEspeciaisCache.length === 0) {
+                try {
+                    const res = await fetch('especiais.json');
+                    if (res.ok) {
+                        listaEspeciaisCache = await res.json();
+                    } else {
+                        console.error('Arquivo especiais.json não encontrado.');
+                    }
+                } catch (err) {
+                    console.error('Erro ao carregar especiais.json:', err);
+                }
+            }
 
             await sortearEExibirPokemonSlide();
 
@@ -990,26 +1004,42 @@
         }
 
         async function sortearEExibirPokemonSlide() {
-            if (listaGeralCache.length === 0) return;
+            let pokemonAlvo = null;
 
-            const idAleatorio = Math.floor(Math.random() * listaGeralCache.length) + 1;
+            // Se conseguimos carregar itens do especiais.json, sorteamos entre eles
+            if (listaEspeciaisCache.length > 0) {
+                const itemEspecial = listaEspeciaisCache[Math.floor(Math.random() * listaEspeciaisCache.length)];
+                // itemEspecial pode conter o ID ou nome direto, ou a estrutura completa vinda do JSON
+                const identificador = itemEspecial.id || itemEspecial.name || itemEspecial;
+                
+                try {
+                    const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${identificador}`);
+                    if (res.ok) {
+                        pokemonAlvo = await res.json();
+                    }
+                } catch (e) {
+                    console.error('Erro ao buscar Pokémon especial:', e);
+                }
+            }
 
-            try {
+            // Fallback caso o especiais.json esteja vazio ou dê erro
+            if (!pokemonAlvo && listaGeralCache.length > 0) {
+                const idAleatorio = Math.floor(Math.random() * listaGeralCache.length) + 1;
                 const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${idAleatorio}`);
-                const pokemon = await res.json();
+                pokemonAlvo = await res.json();
+            }
 
-                const imgUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
-                const tiposHTML = pokemon.types.map(t => {
+            if (pokemonAlvo) {
+                const imgUrl = pokemonAlvo.sprites.other['official-artwork'].front_default || pokemonAlvo.sprites.front_default;
+                const tiposHTML = pokemonAlvo.types.map(t => {
                     const tipo = t.type.name;
                     return `<span class="type-badge ${tipo}">${traduzirTipo(tipo)}</span>`;
                 }).join('');
 
-                document.getElementById('slideId').innerText = `#${pokemon.id}`;
-                document.getElementById('slideName').innerText = pokemon.name;
+                document.getElementById('slideId').innerText = `#${pokemonAlvo.id}`;
+                document.getElementById('slideName').innerText = pokemonAlvo.name;
                 document.getElementById('slideImg').src = imgUrl;
                 document.getElementById('slideTypes').innerHTML = tiposHTML;
-            } catch (err) {
-                console.error('Erro no slideshow:', err);
             }
         }
 
