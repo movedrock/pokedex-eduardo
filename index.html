@@ -414,7 +414,32 @@
 
         let pokemonsFiltradosForma = [];
         let offsetForma = 0;
-        let modoAtual = 'padrao'; 
+        let modoAtual = 'padrao';
+
+        const traducaoTipos = {
+            "fire": "Fogo",
+            "water": "Água",
+            "grass": "Planta",
+            "electric": "Elétrico",
+            "normal": "Normal",
+            "bug": "Inseto",
+            "poison": "Venenoso",
+            "ground": "Terra",
+            "fairy": "Fada",
+            "fighting": "Lutador",
+            "psychic": "Psíquico",
+            "rock": "Pedra",
+            "ghost": "Fantasma",
+            "ice": "Gelo",
+            "dragon": "Dragão",
+            "steel": "Aço",
+            "dark": "Sombrio",
+            "flying": "Voador"
+        };
+
+        function traduzirTipo(tipoIngles) {
+            return traducaoTipos[tipoIngles.toLowerCase()] || tipoIngles;
+        }
 
         window.onload = async () => {
             if (document.activeElement) {
@@ -532,7 +557,10 @@
 
         function criarCardPokemon(pokemon) {
             const grid = document.getElementById('pokedexGrid');
-            const tiposHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
+            const tiposHTML = pokemon.types.map(t => {
+                const tipo = t.type.name;
+                return `<span class="type-badge ${tipo}">${traduzirTipo(tipo)}</span>`;
+            }).join('')//pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
             const imagemUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
             
             const somUrl = (pokemon.cries && (pokemon.cries.latest || pokemon.cries.legacy)) ? (pokemon.cries.latest || pokemon.cries.legacy) : '';
@@ -749,7 +777,10 @@
                 document.getElementById('detailImg').dataset.name = pokemon.name; 
                 
                 const divTipos = document.getElementById('detailTypes');
-                divTipos.innerHTML = pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
+                divTipos.innerHTML = pokemon.types.map(t => {
+                    const tipo = t.type.name;
+                    return `<span class="type-badge ${tipo}">${traduzirTipo(tipo)}</span>`;
+                }).join('')//pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
 
                 const nomeBaseEspecie = pokemon.name.split('-')[0];
                 const resEspecie = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${nomeBaseEspecie}`);
@@ -817,8 +848,12 @@
                     varDiv.innerHTML = `
                         <img src="${imgVar}" alt="${dadosVar.name}">
                         <div style="font-weight: bold; text-transform: capitalize; font-size: 13px;">${dadosVar.name}</div>
+                        <div style="margin-top: 4px;">${dadosVar.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 8px; padding: 2px 4px;">${traduzirTipo(t.type.name)}</span>`).join('')}</div>
+                    `;/*varDiv.innerHTML = `
+                        <img src="${imgVar}" alt="${dadosVar.name}">
+                        <div style="font-weight: bold; text-transform: capitalize; font-size: 13px;">${dadosVar.name}</div>
                         <div style="margin-top: 4px;">${dadosVar.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 8px; padding: 2px 4px;">${t.type.name}</span>`).join('')}</div>
-                    `;
+                    `;*/
                     container.appendChild(varDiv);
                 } catch (e) {
                     console.error('Erro ao carregar variante:', e);
@@ -853,8 +888,12 @@
                     passoDiv.innerHTML = `
                         <img src="${dados.sprites.front_default}" alt="${nomePokemon}">
                         <div style="font-weight: bold; text-transform: capitalize; font-size: 14px;">${nomePokemon}</div>
+                        <div style="margin-top: 4px;">${dados.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 9px; padding: 2px 5px;">${traduzirTipo(t.type.name)}</span>`).join('')}</div>
+                    `;/*passoDiv.innerHTML = `
+                        <img src="${dados.sprites.front_default}" alt="${nomePokemon}">
+                        <div style="font-weight: bold; text-transform: capitalize; font-size: 14px;">${nomePokemon}</div>
                         <div style="margin-top: 4px;">${dados.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 9px; padding: 2px 5px;">${t.type.name}</span>`).join('')}</div>
-                    `;
+                    `;*/
                     treeContainer.appendChild(passoDiv);
 
                     if (i < passos.length - 1) {
