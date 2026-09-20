@@ -61,12 +61,6 @@
             width: 220px;
             padding-right: 40px;
         }
-        .type-select {
-            cursor: pointer;
-            font-weight: bold;
-            text-transform: uppercase;
-            font-size: 13px;
-        }
         
         .btn-limpar {
             position: absolute;
@@ -80,6 +74,23 @@
             display: none;
         }
         .btn-limpar:hover { color: #cc0000; }
+
+        /* Botão para abrir o seletor de tipos em Grid */
+        .btn-filtro-tipo {
+            background-color: #f8f9fa;
+            color: #333;
+            border: 2px solid #ddd;
+            padding: 12px 18px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+        }
+        .btn-filtro-tipo:hover {
+            border-color: #cc0000;
+            transform: scale(1.02);
+        }
 
         /* Botão do Modo Apresentação */
         .btn-slideshow {
@@ -295,6 +306,62 @@
         }
         .btn-fechar-modal:hover { color: #cc0000; }
 
+        /* Estilo do Overlay do Grid de Tipos */
+        .type-grid-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            z-index: 1500;
+            justify-content: center;
+            align-items: center;
+        }
+        .type-grid-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            animation: modalZoom 0.2s ease-out;
+            text-align: center;
+        }
+        .type-grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 20px;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 5px;
+        }
+        .type-grid-item {
+            padding: 12px 8px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 13px;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .type-grid-item:hover {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+        .type-grid-item.all-types {
+            background-color: #333;
+            grid-column: span 3;
+        }
+
         /* Estilo do Modo Apresentação (Slideshow na TV) */
         .slideshow-overlay {
             display: none;
@@ -378,7 +445,7 @@
 
     <!-- LISTA PRINCIPAL -->
     <div id="listView">
-        <h1>POKEDEX DO EDUARDO</h1>
+        <h1>POKEDEX DO LEO</h1>
         
         <!-- Barra de Busca e Filtros -->
         <div class="controls-container">
@@ -387,26 +454,8 @@
                 <button id="btnClearSearch" class="btn-limpar" onclick="limparBusca()" title="Limpar busca">✕</button>
             </div>
             
-            <!-- Filtro de Tipo -->
-            <select id="typeSelect" class="type-select" style="background-color: #f8f9fa; color: #333;" onchange="mudarCorFiltro(this); buscarPorTipoAPI()">
-                <option value="">Todos os Tipos</option>
-                <option value="fire">Fogo</option>
-                <option value="water">Água</option>
-                <option value="grass">Planta</option>
-                <option value="electric">Elétrico</option>
-                <option value="normal">Normal</option>
-                <option value="bug">Inseto</option>
-                <option value="poison">Venenoso</option>
-                <option value="ground">Terra</option>
-                <option value="fairy">Fada</option>
-                <option value="fighting">Lutador</option>
-                <option value="psychic">Psíquico</option>
-                <option value="rock">Pedra</option>
-                <option value="ghost">Fantasma</option>
-                <option value="ice">Gelo</option>
-                <option value="dragon">Dragão</option>
-                <option value="steel">Aço</option>
-            </select>
+            <!-- Botão Acionador do Grid de Tipos -->
+            <button id="btnFiltroTipoText" class="btn-filtro-tipo" onclick="abrirGridTipos()">Filtrar por Tipo</button>
 
             <!-- Filtro de Formas Especiais -->
             <select id="formSelect" class="type-select" style="background-color: #fff3cd; color: #856404;" onchange="buscarPorFormaEspecial(this)">
@@ -461,6 +510,35 @@
         </div>
     </div>
 
+    <!-- GRID FLUTUANTE DE ESCOLHA DE TIPOS -->
+    <div id="typeGridModal" class="type-grid-overlay" onclick="fecharGridTiposFora(event)">
+        <div class="type-grid-content">
+            <button class="btn-fechar-modal" onclick="fecharGridTipos()">✕</button>
+            <h3 style="margin-top: 0; color: #333;">Escolha um Tipo</h3>
+            <div class="type-grid-container">
+                <div class="type-grid-item all-types" onclick="selecionarTipo('')">Todos os Tipos</div>
+                <div class="type-grid-item fire" onclick="selecionarTipo('fire')">Fogo</div>
+                <div class="type-grid-item water" onclick="selecionarTipo('water')">Água</div>
+                <div class="type-grid-item grass" onclick="selecionarTipo('grass')">Planta</div>
+                <div class="type-grid-item electric" onclick="selecionarTipo('electric')">Elétrico</div>
+                <div class="type-grid-item normal" onclick="selecionarTipo('normal')">Normal</div>
+                <div class="type-grid-item bug" onclick="selecionarTipo('bug')">Inseto</div>
+                <div class="type-grid-item poison" onclick="selecionarTipo('poison')">Venenoso</div>
+                <div class="type-grid-item ground" onclick="selecionarTipo('ground')">Terra</div>
+                <div class="type-grid-item fairy" onclick="selecionarTipo('fairy')">Fada</div>
+                <div class="type-grid-item fighting" onclick="selecionarTipo('fighting')">Lutador</div>
+                <div class="type-grid-item psychic" onclick="selecionarTipo('psychic')">Psíquico</div>
+                <div class="type-grid-item rock" onclick="selecionarTipo('rock')">Pedra</div>
+                <div class="type-grid-item ghost" onclick="selecionarTipo('ghost')">Fantasma</div>
+                <div class="type-grid-item ice" onclick="selecionarTipo('ice')">Gelo</div>
+                <div class="type-grid-item dragon" onclick="selecionarTipo('dragon')">Dragão</div>
+                <div class="type-grid-item steel" onclick="selecionarTipo('steel')">Aço</div>
+                <div class="type-grid-item dark" onclick="selecionarTipo('dark')">Sombrio</div>
+                <div class="type-grid-item flying" onclick="selecionarTipo('flying')">Voador</div>
+            </div>
+        </div>
+    </div>
+
     <!-- TELA DO MODO APRESENTAÇÃO (SLIDESHOW NA TV) -->
     <div id="slideshowModal" class="slideshow-overlay">
         <button class="btn-fechar-modal" style="color: white; top: 20px; right: 30px; font-size: 32px;" onclick="pararSlideshow()">✕</button>
@@ -484,7 +562,8 @@
         let pokemonsFiltradosForma = [];
         let offsetForma = 0;
         let modoAtual = 'padrao';
-        let slideshowInterval = null; // Variável para controlar o temporizador do slideshow
+        let tipoAtualSelecionado = '';
+        let slideshowInterval = null;
 
         const traducaoTipos = {
             "fire": "Fogo",
@@ -674,9 +753,7 @@
             }
 
             btnLimpar.style.display = 'block';
-            document.getElementById('typeSelect').value = ''; 
-            document.getElementById('typeSelect').style.backgroundColor = '#f8f9fa';
-            document.getElementById('typeSelect').style.color = '#333';
+            resetarVisualBotaoTipo();
             document.getElementById('formSelect').value = '';
             modoAtual = 'padrao';
 
@@ -704,14 +781,48 @@
             }
         }
 
-        async function buscarPorTipoAPI() {
-            const tipoSelecionado = document.getElementById('typeSelect').value;
+        /* Funções do Grid de Tipos Overlay */
+        function abrirGridTipos() {
+            document.getElementById('typeGridModal').style.display = 'flex';
+        }
+
+        function fecharGridTipos() {
+            document.getElementById('typeGridModal').style.display = 'none';
+        }
+
+        function fecharGridTiposFora(event) {
+            const content = document.querySelector('.type-grid-content');
+            if (!content.contains(event.target)) {
+                fecharGridTipos();
+            }
+        }
+
+        async function selecionarTipo(tipoSelecionado) {
+            fecharGridTipos();
+            tipoAtualSelecionado = tipoSelecionado;
+            const btnFiltro = document.getElementById('btnFiltroTipoText');
             const grid = document.getElementById('pokedexGrid');
 
             if (tipoSelecionado === "") {
+                resetarVisualBotaoTipo();
                 limparBusca();
                 return;
             }
+
+            // Atualiza o visual do botão de filtro com a cor e nome traduzido do tipo escolhido
+            const coresMap = {
+                "fire": "#F08030", "water": "#6890F0", "grass": "#78C850",
+                "electric": "#F8D030", "normal": "#A8A878", "bug": "#A8B820",
+                "poison": "#A040A0", "ground": "#E0C068", "fairy": "#EE99AC",
+                "fighting": "#C03028", "psychic": "#F85888", "rock": "#B8A038",
+                "ghost": "#705898", "ice": "#98D8D8", "dragon": "#7038F8",
+                "steel": "#B8B8D0", "dark": "#705848", "flying": "#A890F0"
+            };
+
+            btnFiltro.innerText = traduzirTipo(tipoSelecionado);
+            btnFiltro.style.backgroundColor = coresMap[tipoSelecionado] || '#f8f9fa';
+            btnFiltro.style.color = (tipoSelecionado === 'electric') ? '#333' : '#fff';
+            btnFiltro.style.borderColor = coresMap[tipoSelecionado] || '#ddd';
 
             document.getElementById('searchInput').value = '';
             document.getElementById('btnClearSearch').style.display = 'none';
@@ -736,6 +847,15 @@
             }
         }
 
+        function resetarVisualBotaoTipo() {
+            const btnFiltro = document.getElementById('btnFiltroTipoText');
+            btnFiltro.innerText = "Filtrar por Tipo";
+            btnFiltro.style.backgroundColor = "#f8f9fa";
+            btnFiltro.style.color = "#333";
+            btnFiltro.style.borderColor = "#ddd";
+            tipoAtualSelecionado = '';
+        }
+
         async function buscarPorFormaEspecial(selectElement) {
             const termoFiltro = selectElement.value;
             const grid = document.getElementById('pokedexGrid');
@@ -747,9 +867,7 @@
 
             document.getElementById('searchInput').value = '';
             document.getElementById('btnClearSearch').style.display = 'none';
-            document.getElementById('typeSelect').value = '';
-            document.getElementById('typeSelect').style.backgroundColor = '#f8f9fa';
-            document.getElementById('typeSelect').style.color = '#333';
+            resetarVisualBotaoTipo();
 
             modoAtual = 'forma';
             grid.innerHTML = '';
@@ -780,9 +898,7 @@
         function limparBusca() {
             document.getElementById('searchInput').value = '';
             document.getElementById('btnClearSearch').style.display = 'none';
-            document.getElementById('typeSelect').value = '';
-            document.getElementById('typeSelect').style.backgroundColor = '#f8f9fa';
-            document.getElementById('typeSelect').style.color = '#333';
+            resetarVisualBotaoTipo();
             document.getElementById('formSelect').value = '';
             
             document.getElementById('pokedexGrid').innerHTML = '';
@@ -793,36 +909,6 @@
             pokemonsFiltradosForma = [];
             offsetForma = 0;
             carregarProximos();
-        }
-
-        function mudarCorFiltro(selectElement) {
-            const valor = selectElement.value;
-            const coresMap = {
-                "fire": "#F08030",
-                "water": "#6890F0",
-                "grass": "#78C850",
-                "electric": "#F8D030",
-                "normal": "#A8A878",
-                "bug": "#A8B820",
-                "poison": "#A040A0",
-                "ground": "#E0C068",
-                "fairy": "#EE99AC",
-                "fighting": "#C03028",
-                "psychic": "#F85888",
-                "rock": "#B8A038",
-                "ghost": "#705898",
-                "ice": "#98D8D8",
-                "dragon": "#7038F8",
-                "steel": "#B8B8D0"
-            };
-
-            if (valor && coresMap[valor]) {
-                selectElement.style.backgroundColor = coresMap[valor];
-                selectElement.style.color = (valor === 'electric') ? '#333' : '#fff';
-            } else {
-                selectElement.style.backgroundColor = '#f8f9fa';
-                selectElement.style.color = '#333';
-            }
         }
 
         async function abrirDetalhes(pokemonIdOuNome) {
@@ -896,10 +982,8 @@
             const modal = document.getElementById('slideshowModal');
             modal.style.display = 'flex';
 
-            // Carrega o primeiro imediatamente
             await sortearEExibirPokemonSlide();
 
-            // Configura para trocar a cada 5 segundos (5000 milissegundos)
             slideshowInterval = setInterval(async () => {
                 await sortearEExibirPokemonSlide();
             }, 5000);
@@ -908,7 +992,6 @@
         async function sortearEExibirPokemonSlide() {
             if (listaGeralCache.length === 0) return;
 
-            // Sorteia um ID aleatório entre 1 e o tamanho do cache (1025)
             const idAleatorio = Math.floor(Math.random() * listaGeralCache.length) + 1;
 
             try {
@@ -934,7 +1017,6 @@
             const modal = document.getElementById('slideshowModal');
             modal.style.display = 'none';
 
-            // Para o temporizador para economizar processamento da TV
             if (slideshowInterval) {
                 clearInterval(slideshowInterval);
                 slideshowInterval = null;
