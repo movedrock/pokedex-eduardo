@@ -80,6 +80,23 @@
             display: none;
         }
         .btn-limpar:hover { color: #cc0000; }
+
+        /* Botão do Modo Apresentação */
+        .btn-slideshow {
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            padding: 12px 18px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        .btn-slideshow:hover {
+            background-color: #e68900;
+            transform: scale(1.05);
+        }
         
         /* Grid Principal */
         .grid-container {
@@ -278,6 +295,43 @@
         }
         .btn-fechar-modal:hover { color: #cc0000; }
 
+        /* Estilo do Modo Apresentação (Slideshow na TV) */
+        .slideshow-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 15, 15, 0.95);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+        }
+        .slideshow-card {
+            background: #ffffff;
+            color: #333;
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            animation: fadeIn 0.4s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .slideshow-card img {
+            width: 240px;
+            height: 240px;
+            object-fit: contain;
+            margin: 15px 0;
+        }
+
         .evolution-tree, .variants-container {
             display: flex;
             justify-content: center;
@@ -363,6 +417,9 @@
                 <option value="alola">Alolan</option>
                 <option value="hisui">Hisuian</option>
             </select>
+
+            <!-- Botão do Modo Apresentação -->
+            <button class="btn-slideshow" onclick="iniciarSlideshow()">📺 Modo Apresentação</button>
         </div>
 
         <div id="pokedexGrid" class="grid-container"></div>
@@ -404,6 +461,18 @@
         </div>
     </div>
 
+    <!-- TELA DO MODO APRESENTAÇÃO (SLIDESHOW NA TV) -->
+    <div id="slideshowModal" class="slideshow-overlay">
+        <button class="btn-fechar-modal" style="color: white; top: 20px; right: 30px; font-size: 32px;" onclick="pararSlideshow()">✕</button>
+        <div class="slideshow-card">
+            <small id="slideId" style="color: #888; font-weight: bold; font-size: 16px;"></small>
+            <h2 id="slideName" style="text-transform: capitalize; margin: 5px 0 15px 0; font-size: 26px;"></h2>
+            <img id="slideImg" src="" alt="Pokémon Slideshow">
+            <div id="slideTypes" style="margin-top: 15px;"></div>
+        </div>
+        <p style="margin-top: 25px; color: #aaa; font-size: 14px;">Modo Apresentação Ativo (Troca a cada 5s) 📺</p>
+    </div>
+
     <script>
         let offset = 0;
         const limit = 12;
@@ -415,6 +484,7 @@
         let pokemonsFiltradosForma = [];
         let offsetForma = 0;
         let modoAtual = 'padrao';
+        let slideshowInterval = null; // Variável para controlar o temporizador do slideshow
 
         const traducaoTipos = {
             "fire": "Fogo",
@@ -560,7 +630,7 @@
             const tiposHTML = pokemon.types.map(t => {
                 const tipo = t.type.name;
                 return `<span class="type-badge ${tipo}">${traduzirTipo(tipo)}</span>`;
-            }).join('')//pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
+            }).join('');
             const imagemUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
             
             const somUrl = (pokemon.cries && (pokemon.cries.latest || pokemon.cries.legacy)) ? (pokemon.cries.latest || pokemon.cries.legacy) : '';
@@ -769,7 +839,6 @@
 
                 document.getElementById('detailName').innerText = `#${pokemon.id} - ${pokemon.name}`;
                 
-                // Insere o botão de som ao lado do nome na tela de detalhes
                 const soundContainer = document.getElementById('detailSoundContainer');
                 soundContainer.innerHTML = somUrl ? `<button class="btn-som-detalhe" onclick="tocarSom(event, '${somUrl}')" title="Ouvir som">🔊</button>` : '';
 
@@ -780,7 +849,7 @@
                 divTipos.innerHTML = pokemon.types.map(t => {
                     const tipo = t.type.name;
                     return `<span class="type-badge ${tipo}">${traduzirTipo(tipo)}</span>`;
-                }).join('')//pokemon.types.map(t => `<span class="type-badge ${t.type.name}">${t.type.name}</span>`).join('');
+                }).join('');
 
                 const nomeBaseEspecie = pokemon.name.split('-')[0];
                 const resEspecie = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${nomeBaseEspecie}`);
@@ -822,6 +891,56 @@
             }
         }
 
+        /* Funções do Modo Apresentação (Slideshow) */
+        async function iniciarSlideshow() {
+            const modal = document.getElementById('slideshowModal');
+            modal.style.display = 'flex';
+
+            // Carrega o primeiro imediatamente
+            await sortearEExibirPokemonSlide();
+
+            // Configura para trocar a cada 5 segundos (5000 milissegundos)
+            slideshowInterval = setInterval(async () => {
+                await sortearEExibirPokemonSlide();
+            }, 5000);
+        }
+
+        async function sortearEExibirPokemonSlide() {
+            if (listaGeralCache.length === 0) return;
+
+            // Sorteia um ID aleatório entre 1 e o tamanho do cache (1025)
+            const idAleatorio = Math.floor(Math.random() * listaGeralCache.length) + 1;
+
+            try {
+                const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${idAleatorio}`);
+                const pokemon = await res.json();
+
+                const imgUrl = pokemon.sprites.other['official-artwork'].front_default || pokemon.sprites.front_default;
+                const tiposHTML = pokemon.types.map(t => {
+                    const tipo = t.type.name;
+                    return `<span class="type-badge ${tipo}">${traduzirTipo(tipo)}</span>`;
+                }).join('');
+
+                document.getElementById('slideId').innerText = `#${pokemon.id}`;
+                document.getElementById('slideName').innerText = pokemon.name;
+                document.getElementById('slideImg').src = imgUrl;
+                document.getElementById('slideTypes').innerHTML = tiposHTML;
+            } catch (err) {
+                console.error('Erro no slideshow:', err);
+            }
+        }
+
+        function pararSlideshow() {
+            const modal = document.getElementById('slideshowModal');
+            modal.style.display = 'none';
+
+            // Para o temporizador para economizar processamento da TV
+            if (slideshowInterval) {
+                clearInterval(slideshowInterval);
+                slideshowInterval = null;
+            }
+        }
+
         async function carregarVariantesEspecie(varieties, nomeAtual) {
             const section = document.getElementById('variantsSection');
             const container = document.getElementById('variantsContainer');
@@ -849,11 +968,7 @@
                         <img src="${imgVar}" alt="${dadosVar.name}">
                         <div style="font-weight: bold; text-transform: capitalize; font-size: 13px;">${dadosVar.name}</div>
                         <div style="margin-top: 4px;">${dadosVar.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 8px; padding: 2px 4px;">${traduzirTipo(t.type.name)}</span>`).join('')}</div>
-                    `;/*varDiv.innerHTML = `
-                        <img src="${imgVar}" alt="${dadosVar.name}">
-                        <div style="font-weight: bold; text-transform: capitalize; font-size: 13px;">${dadosVar.name}</div>
-                        <div style="margin-top: 4px;">${dadosVar.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 8px; padding: 2px 4px;">${t.type.name}</span>`).join('')}</div>
-                    `;*/
+                    `;
                     container.appendChild(varDiv);
                 } catch (e) {
                     console.error('Erro ao carregar variante:', e);
@@ -889,11 +1004,7 @@
                         <img src="${dados.sprites.front_default}" alt="${nomePokemon}">
                         <div style="font-weight: bold; text-transform: capitalize; font-size: 14px;">${nomePokemon}</div>
                         <div style="margin-top: 4px;">${dados.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 9px; padding: 2px 5px;">${traduzirTipo(t.type.name)}</span>`).join('')}</div>
-                    `;/*passoDiv.innerHTML = `
-                        <img src="${dados.sprites.front_default}" alt="${nomePokemon}">
-                        <div style="font-weight: bold; text-transform: capitalize; font-size: 14px;">${nomePokemon}</div>
-                        <div style="margin-top: 4px;">${dados.types.map(t => `<span class="type-badge ${t.type.name}" style="font-size: 9px; padding: 2px 5px;">${t.type.name}</span>`).join('')}</div>
-                    `;*/
+                    `;
                     treeContainer.appendChild(passoDiv);
 
                     if (i < passos.length - 1) {
